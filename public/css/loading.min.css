@@ -1,0 +1,1 @@
+.i-loading{position:fixed;left:0;top:0;right:0;bottom:0;z-index:18;background:#FFF}.i-loading:after{display:block;content:'';width:40px;height:40px;position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:19;background:url(https://img.ddimg.mobi/assets/h5/global-gif-loading.gif) no-repeat;background-size:cover}
