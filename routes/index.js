@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const request = require('request');
 const {changeStr} = require('../utils/tools');
+const db = require("../utils/db")
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -14,6 +15,25 @@ router.get('/getProducts', function(req, res) {
     console.log('s_search...',data);
     res.json(data);
   })
+});
+
+router.get('/user', function(req, res) {
+    let sql="select * from user_info";
+    // res.json(sql);
+    async function a(){
+      let con = await db();
+        con.query(sql,(err,data)=>{
+            if (err) {
+                console.log(err);
+                res.status(500).send('database error').end()
+            }
+            else{
+                console.log('data.....',data)
+                res.json(data);
+            }
+        })
+    }
+    a();
 });
 
 
