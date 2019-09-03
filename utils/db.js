@@ -18,16 +18,35 @@ pool.connectionLimit = 10;      // 连接池中可以存放的最大连接数量
 pool.waitForConnections = true; // 连接使用量超负荷是否等待, false 会报错
 pool.queueLimit = 0;            // 每个连接可操作的 列数 上限, 0 为没有上限
 
-// 对外暴漏从连接池中获取数据库连接的方法
-module.exports = function () {
-    return new Promise((resolve, reject) => {
-        pool.getConnection((err, conn) => {
-            if (err) {
-                console.log("数据库连接获取失败",err);
-            } else {
-                console.log("数据库连接了。。。");
-                resolve(conn);
-            }
-        });
+
+const query = (sql, options, callback) =>{
+    pool.getConnection((error, connection) =>{
+        if (error) {
+            console.log("数据库连接获取失败",error);
+            callback(error, null, null);
+        } else {
+            console.log("数据库连接了。。。");
+            connection.query(sql, options, (error, results, fields) =>{
+                //释放连接
+                connection.release();
+                //事件驱动回调
+                callback(error, results, fields);
+            });
+        }
     });
 };
+module.exports=query;
+
+// 对外暴漏从连接池中获取数据库连接的方法
+// module.exports = function () {
+//     return new Promise((resolve, reject) => {
+//         pool.getConnection((err, conn) => {
+//             if (err) {
+//                 console.log("数据库连接获取失败",err);
+//             } else {
+//                 console.log("数据库连接了。。。");
+//                 resolve(conn);
+//             }
+//         });
+//     });
+// };
