@@ -1,52 +1,59 @@
-const mysql = require("mysql");
+const mysql = require('mysql');
 
-// 创建 mysql 连接池并配置参数
-const pool = mysql.createPool({
-    host: "127.0.0.1",    // 主机地址
-    port: 3306,                 // 端口
-    user: "root",               // 数据库访问账号
-    password: "xingkaihang",         // 数据库访问密码
-    database: "RESUME",           // 要访问的数据库
-    charset: "UTF8_GENERAL_CI", // 字符编码 ( 必须大写 )
-    typeCast: true,             // 是否把结果值转换为原生的 javascript 类型
-    supportBigNumbers: true,    // 处理大数字 (bigint, decimal), 需要开启 ( 结合 bigNumberStrings 使用 )
-    bigNumberStrings: true,     // 大数字 (bigint, decimal) 值转换为javascript字符对象串
-    multipleStatements: false,  // 允许每个mysql语句有多条查询, 未防止sql注入不开启
-    //connectTimeout: 5000,     // 数据库连接超时时间, 默认无超时
-});
-pool.connectionLimit = 10;      // 连接池中可以存放的最大连接数量
-pool.waitForConnections = true; // 连接使用量超负荷是否等待, false 会报错
-pool.queueLimit = 0;            // 每个连接可操作的 列数 上限, 0 为没有上限
-
-
-const query = (sql, options, callback) =>{
-    pool.getConnection((error, connection) =>{
-        if (error) {
-            console.log("数据库连接获取失败",error);
-            callback(error, null, null);
-        } else {
-            console.log("数据库连接了。。。");
-            connection.query(sql, options, (error, results, fields) =>{
-                //释放连接
-                connection.release();
-                //事件驱动回调
-                callback(error, results, fields);
-            });
+module.exports = {
+    config: {
+        host: '129.28.152.240',
+        port: 3306,
+        database: 'resume',
+        user: 'root',
+        password: 'xingkaihang',
+        useConnectionPooling: true, // 使用连接池
+        typeCast: true,             // 是否把结果值转换为原生的 javascript 类型
+    },
+    pool: null,
+    /**
+     * 创建连接池
+     */
+    create: function () {
+        // 没有pool的才创建
+        if (!this.pool) {
+            this.pool = mysql.createPool(this.config);
+            this.pool.connectionLimit = 10; // 连接池中可以存放的最大连接数量
         }
-    });
+    },
+    /**
+     * 执行sql
+     * @param {Object} config 操作对象
+     */
+    query: function (config) {
+        this.create();
+        this.pool.getConnection((err, conn) => {
+            if (err) {
+                console.log('mysql pool getConnections err:' + err);
+                throw err;
+            } else {
+                conn.query(config.sql, config.params, (err, result) => {
+                    // 释放连接到连接池
+                    conn.release();
+                    if (config.success) {
+                        console.log('result...',result)
+                        let successResult={
+                            "code": 0,
+                            "success": true,
+                            "data": result[0]
+                        };
+                        return config.success(successResult);
+                    }
+                    if (config.error) {
+                        let errorResult={
+                            "code": 500,
+                            "success": false,
+                            "data": err
+                        };
+                        return config.error(errorResult);
+                    }
+                });
+            }
+        });
+    }
 };
-module.exports=query;
-
-// 对外暴漏从连接池中获取数据库连接的方法
-// module.exports = function () {
-//     return new Promise((resolve, reject) => {
-//         pool.getConnection((err, conn) => {
-//             if (err) {
-//                 console.log("数据库连接获取失败",err);
-//             } else {
-//                 console.log("数据库连接了。。。");
-//                 resolve(conn);
-//             }
-//         });
-//     });
-// };
